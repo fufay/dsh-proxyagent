@@ -1,0 +1,4 @@
+# dsh-proxyagent: 在 profile 加载树里插入本插件的一行
+- insert:
+    - id: dsh-proxyagent
+      name: 'dsh-proxyagent'

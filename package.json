@@ -1,0 +1,17 @@
+{
+  "name": "dsh-proxyagent",
+  "version": "0.1.0",
+  "description": "DSH 按需代理：需要时自动走代理、用完即停。内置 mihomo 内核，按订阅规则表判定，仅服务本会话、不影响其它软件。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": ["lib", "cordis.patch.yml", "README.md", "LICENSE"],
+  "keywords": ["dsh", "dsh-plugin", "proxy", "mihomo", "harmonyos"],
+  "license": "MIT",
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
+  "peerDependencies": { "@deepseek-ai/schemastery": "*" }
+}
