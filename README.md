@@ -4,8 +4,24 @@
 
 - 只监听 `127.0.0.1`（不建 VPN/tun、不改 DNS、不动系统代理）
 - 按**订阅自带的规则表**判定域名该走代理还是直连（GitHub 系走代理，`.cn`/国内站点直连）
-- 内置 mihomo 内核：首次使用时用你机器上的 Go 经 `goproxy.cn` 编译（**不依赖 GitHub**）
+- 内核优先**按平台下载预编译版**（多镜像竞速，通常几秒）；取不到才用你机器上的 Go 经 `goproxy.cn` 编译（**不依赖 GitHub**）
 - 订阅与节点凭据只落本机数据目录（权限 0600），不上传、不入库
+
+## 平台支持
+
+内核会按 `process.platform` + `process.arch` 自动挑对应资产：
+
+| 平台 | 内核资产 | 设置页 / 测速 / 选节点 / 刷新订阅 | `proxy_run` |
+| --- | --- | --- | --- |
+| Linux arm64（含 HarmonyOS PC 社区版 DSHM） | `mihomo-linux-arm64.gz` | ✅ | ✅ |
+| Linux x86_64 | `mihomo-linux-amd64.gz` | ✅ | ✅ |
+| macOS Apple Silicon | `mihomo-darwin-arm64.gz` | ✅ | ✅ |
+| macOS Intel | `mihomo-darwin-amd64.gz` | ✅ | ✅ |
+| Windows x86_64 | `mihomo-windows-amd64.exe.gz` | ✅ | ⏳ 待接入 DSH 的 shell 接缝 |
+
+- **macOS**：若提示"无法验证开发者"，执行 `xattr -d com.apple.quarantine <内核路径>` 即可。
+- **Windows**：本版内核、设置页、节点测速与选用都可用；`proxy_run` 需要先接 DSH 的 shell 接缝（POSIX 走 bash、Windows 走 pwsh），计划下一版；临时可用系统自带 `curl` 并自带 `https_proxy` 环境变量。
+- 只有 **Linux arm64（本机 HarmonyOS）** 是逐项实测过的；其余平台为代码审计 + 交叉编译产物，欢迎反馈。
 
 ## 安装（DSH Desktop）
 
@@ -16,27 +32,43 @@ pnpm add github.com/<owner>/dsh-proxyagent
 或：设置 → 插件 → 「安装插件」输入框里填 `github.com/<owner>/dsh-proxyagent`。
 安装后**需要重启 DSHM 应用**才会挂载（重启前看不到该插件属正常）。
 
-## 配置（设置 → 插件 → dsh-proxyagent）
+## 配置（**设置 → 按需代理**，也可从「设置 → 插件 → dsh-proxyagent」卡片进入）
+
+两个入口都能改同一份配置：左侧导航的「按需代理」页，与插件卡片里的表单。
 
 | 字段 | 默认 | 说明 |
 | --- | --- | --- |
 | `subscriptionUrl` | 空 | **必填**。订阅地址。服务商后台打开开关后通常**只有 10 分钟**可下载 |
 | `mixedPort` | 17890 | 本地混合代理端口（HTTP+SOCKS，仅 127.0.0.1）|
 | `ctlPort` | 19090 | 内核控制端口（仅 127.0.0.1）|
-| `mihomoVersion` | v1.19.32 | 首次准备内核时编译的版本 |
+| `mihomoVersion` | v1.19.32 | 下载不到预编译内核、需要本机 Go 编译时用的版本 |
+
+### 节点：自己测、自己选
+
+插件**不替你选节点**（不做自动测速、不自动换节点、失败也不自动重跑命令）：
+
+1. 填订阅地址 → **点保存就自动拉一次**（也可随时点地址旁的「刷新」）；
+2. 点「启动内核」；
+3. 点「⚡」测单个节点，或「全部测速」一次测完（170 个节点约 20 秒）；
+4. 点「选用」定下要用的节点 —— 会记住，之后 `proxy_run` 一直用它。
+
+（内核只在需要时起、用完即停；设置页里的内核启停是给你手动测速用的。）
 
 ## 使用（agent 会自动调，人也可以手动）
 
+**填好订阅地址就够了**：第一次真正用代理时，插件会自动补齐缺的东西
+（取订阅 → 取内核），不需要手动先点两个工具。补齐进度会在 `proxy_run` 的返回里写明。
+
 | 工具 | 作用 |
 | --- | --- |
-| `proxy_status` | 查状态（是否运行 / 内核与订阅是否就绪 / 规则条数）|
-| `proxy_setup_core` | 首次准备内核（编译，约 5–20 分钟）|
+| `proxy_status` | 查状态（是否运行 / 就绪与否 / 规则条数 / 订阅已取回多久，未就绪时给 `nextStep`）|
+| `proxy_run` | **核心入口**：起代理 → 执行命令 → 立刻关闭（缺订阅/内核会自动补齐）|
+| `proxy_setup_core` | 单独准备内核（多通道竞速下载，实测 5–20s；无 Go 也可用）|
 | `proxy_fetch_subscription` | 取订阅（严格校验 `proxies:`；403 页面绝不会被当配置）|
 | `proxy_rule_query` | 用规则表判断某域名该走代理还是直连 |
-| `proxy_run` | **核心入口**：起代理 → 执行命令 → 立刻关闭 |
 | `proxy_start` / `proxy_stop` | 手动启停（一般不需要）|
 
-首次使用顺序：`proxy_setup_core` → `proxy_fetch_subscription` →（之后随时）`proxy_run`。
+首次使用：**在设置里填订阅地址 → 直接 `proxy_run`**（内部自动完成取订阅与取内核）。
 
 ## 什么时候不该用
 
