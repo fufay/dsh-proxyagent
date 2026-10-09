@@ -17,11 +17,26 @@
 | Linux x86_64 | `mihomo-linux-amd64.gz` | ✅ | ✅ |
 | macOS Apple Silicon | `mihomo-darwin-arm64.gz` | ✅ | ✅ |
 | macOS Intel | `mihomo-darwin-amd64.gz` | ✅ | ✅ |
-| Windows x86_64 | `mihomo-windows-amd64.exe.gz` | ✅ | ⏳ 待接入 DSH 的 shell 接缝 |
+| Windows x86_64 | `mihomo-windows-amd64.exe.gz` | ✅ | ✅（经 DSH 的 shell 接缝）|
 
 - **macOS**：若提示"无法验证开发者"，执行 `xattr -d com.apple.quarantine <内核路径>` 即可。
-- **Windows**：本版内核、设置页、节点测速与选用都可用；`proxy_run` 需要先接 DSH 的 shell 接缝（POSIX 走 bash、Windows 走 pwsh），计划下一版；临时可用系统自带 `curl` 并自带 `https_proxy` 环境变量。
-- **验证程度**：Linux arm64（HarmonyOS PC 移植版）与 macOS（Apple Silicon）已**实机逐项验证**；Linux x86_64 / macOS Intel / Windows 为代码审计 + 交叉编译产物核对，欢迎反馈。
+- **Windows**：`proxy_run` 不再依赖 `/bin/sh` —— 命令交给 **DSH 自带的 shell 执行器**（POSIX 上是 `bash -c`、Windows 上是 `pwsh -c`）。
+  若某个部署没有挂载该服务，会返回明确提示并给出 `curl` 兜底写法，而不是诡异的空失败。
+- **验证程度**：Linux arm64（HarmonyOS PC 移植版）与 macOS（Apple Silicon）已**实机逐项验证**；
+  Windows 的"内核下载 + 设置页 + 节点测速/选用"已实机验证，**`proxy_run` 的 shell 接缝待实机确认**；其余为代码审计 + 交叉编译产物核对，欢迎反馈。
+
+## 常见问题
+
+**Q：DSH 内置的 `web_fetch` / 网页搜索会走本插件的代理吗？**
+不会。它们走的是 DSH 自己的出站策略（由**启动时的 `HTTPS_PROXY` 等环境变量**决定，见内核的 `dsh-http-proxy`），
+与本插件的"只注入单条命令"是两套互不干涉的机制。要用代理抓网页，请让 agent 走 `proxy_run`：
+
+```sh
+proxy_run: curl -sL <url>          # 或 curl -x http://127.0.0.1:17890 <url>
+```
+
+（把 DSH 全局代理指到本插件也可以，但那会让 **所有** DSH 流量——包括 LLM 请求——都走代理，
+且要求内核常驻，与"随起随用、用完即停"相悖，因此**不推荐**。）
 
 ## 安装（DeepSeek Harness Desktop）
 
