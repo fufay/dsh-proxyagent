@@ -25,10 +25,24 @@
   另外：命令请求的是**不隔离**模式执行（`sandboxPolicy.mode = danger-full-access`，与接入接缝前 `spawnSync` 的语义一致）——
   否则 Windows 的沙箱会走 **ACL 受限令牌**，Schannel 在该令牌下取不到用户凭证，**一切 HTTPS 都会以
   `SEC_E_NO_CREDENTIALS` 失败**（2026-10-09 实测踩到）。
-- **验证程度**：Linux arm64（HarmonyOS PC 移植版）与 macOS（Apple Silicon）已**实机逐项验证**；
-  Windows 的"内核下载 + 设置页 + 节点测速/选用 + `proxy_run` 接缝"已实机验证；其余为代码审计 + 交叉编译产物核对，欢迎反馈。
+- **验证程度**：**Linux arm64（HarmonyOS PC 移植版）、macOS（Apple Silicon）、Windows x86_64 均已实机跑通全流程**
+  （含 Windows 上的 `proxy_run` + HTTPS）；Linux x86_64 / macOS Intel 为代码审计 + 交叉编译产物核对，欢迎反馈。
+
+### 在 Windows 上写 `proxy_run` 命令的三个注意（实测踩过，都不是缺陷）
+
+1. **用 `curl.exe`，不要写 `curl`** —— PowerShell 里 `curl` 是 `Invoke-WebRequest` 的别名，不认 `-sI` / `-sS` 这类参数，
+   会报参数错误（看起来像代理失败，其实不是）。
+2. **退出码看 `$LASTEXITCODE`，不是 `$?`** —— 后者是 PowerShell 的**布尔**（成功/失败），不是数字退出码。
+   例：`proxy_run: cmd /c exit 3; echo "code=$LASTEXITCODE"` → `code=3`。
+3. **`ok` / `exitCode` 反映命令的"最后一条语句"（shell 语义）** ——
+   所以 `curl.exe -sI <url>; echo done` 即使 curl 失败也会返回 `exitCode: 0`（最后成功的是 `echo`）。
+   POSIX 上同理（`false; echo hi` 也返回 0）。要拿到真实成败，就别在末尾追加恒成功的语句。
 
 ## 常见问题
+
+**Q：怎么知道命令走了哪条执行通道？**
+返回里的 **`via`** 字段：`"shell"` = 走了 DSH 的 shell 接缝（POSIX `bash` / Windows `pwsh`）、
+`"sh"` = 回退到 POSIX `/bin/sh`（附 `shellFallbackReason`）、`"none"` = 两边都不可用（附 `error`）。
 
 **Q：DSH 内置的 `web_fetch` / 网页搜索会走本插件的代理吗？**
 不会。它们走的是 DSH 自己的出站策略（由**启动时的 `HTTPS_PROXY` 等环境变量**决定，见内核的 `dsh-http-proxy`），
