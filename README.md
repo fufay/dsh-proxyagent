@@ -22,8 +22,11 @@
 - **macOS**：若提示"无法验证开发者"，执行 `xattr -d com.apple.quarantine <内核路径>` 即可。
 - **Windows**：`proxy_run` 不再依赖 `/bin/sh` —— 命令交给 **DSH 自带的 shell 执行器**（POSIX 上是 `bash -c`、Windows 上是 `pwsh -c`）。
   若某个部署没有挂载该服务，会返回明确提示并给出 `curl` 兜底写法，而不是诡异的空失败。
+  另外：命令请求的是**不隔离**模式执行（`sandboxPolicy.mode = danger-full-access`，与接入接缝前 `spawnSync` 的语义一致）——
+  否则 Windows 的沙箱会走 **ACL 受限令牌**，Schannel 在该令牌下取不到用户凭证，**一切 HTTPS 都会以
+  `SEC_E_NO_CREDENTIALS` 失败**（2026-10-09 实测踩到）。
 - **验证程度**：Linux arm64（HarmonyOS PC 移植版）与 macOS（Apple Silicon）已**实机逐项验证**；
-  Windows 的"内核下载 + 设置页 + 节点测速/选用"已实机验证，**`proxy_run` 的 shell 接缝待实机确认**；其余为代码审计 + 交叉编译产物核对，欢迎反馈。
+  Windows 的"内核下载 + 设置页 + 节点测速/选用 + `proxy_run` 接缝"已实机验证；其余为代码审计 + 交叉编译产物核对，欢迎反馈。
 
 ## 常见问题
 
