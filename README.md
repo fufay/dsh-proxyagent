@@ -1,6 +1,6 @@
 # dsh-proxyagent
 
-**按需代理插件**：需要时自动走代理，**用完即停**；只服务当前 DSH 会话，**不影响本机其它软件**。
+**DeepSeek Harness Desktop（DSH）的按需代理插件**：需要时自动走代理，**用完即停**；只服务当前 DSH 会话，**不影响本机其它软件**。
 
 - 只监听 `127.0.0.1`（不建 VPN/tun、不改 DNS、不动系统代理）
 - 按**订阅自带的规则表**判定域名该走代理还是直连（GitHub 系走代理，`.cn`/国内站点直连）
@@ -13,7 +13,7 @@
 
 | 平台 | 内核资产 | 设置页 / 测速 / 选节点 / 刷新订阅 | `proxy_run` |
 | --- | --- | --- | --- |
-| Linux arm64（含 HarmonyOS PC 社区版 DSHM） | `mihomo-linux-arm64.gz` | ✅ | ✅ |
+| Linux arm64（含 HarmonyOS PC 移植版 DSHM） | `mihomo-linux-arm64.gz` | ✅ | ✅ |
 | Linux x86_64 | `mihomo-linux-amd64.gz` | ✅ | ✅ |
 | macOS Apple Silicon | `mihomo-darwin-arm64.gz` | ✅ | ✅ |
 | macOS Intel | `mihomo-darwin-amd64.gz` | ✅ | ✅ |
@@ -21,16 +21,16 @@
 
 - **macOS**：若提示"无法验证开发者"，执行 `xattr -d com.apple.quarantine <内核路径>` 即可。
 - **Windows**：本版内核、设置页、节点测速与选用都可用；`proxy_run` 需要先接 DSH 的 shell 接缝（POSIX 走 bash、Windows 走 pwsh），计划下一版；临时可用系统自带 `curl` 并自带 `https_proxy` 环境变量。
-- 只有 **Linux arm64（本机 HarmonyOS）** 是逐项实测过的；其余平台为代码审计 + 交叉编译产物，欢迎反馈。
+- **验证程度**：Linux arm64（HarmonyOS PC 移植版）与 macOS（Apple Silicon）已**实机逐项验证**；Linux x86_64 / macOS Intel / Windows 为代码审计 + 交叉编译产物核对，欢迎反馈。
 
-## 安装（DSH Desktop）
+## 安装（DeepSeek Harness Desktop）
 
 ```sh
 pnpm add github.com/<owner>/dsh-proxyagent
 ```
 
 或：设置 → 插件 → 「安装插件」输入框里填 `github.com/<owner>/dsh-proxyagent`。
-安装后**需要重启 DSHM 应用**才会挂载（重启前看不到该插件属正常）。
+装完看 **设置 → 按需代理** 有没有出现本插件：有就能直接用（部分版本支持热加载）；**没有的话重启一次应用**即可。
 
 ## 配置（**设置 → 按需代理**，也可从「设置 → 插件 → dsh-proxyagent」卡片进入）
 
