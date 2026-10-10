@@ -1,6 +1,6 @@
 {
   "name": "dsh-proxyagent",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "DSH 按需代理：需要时自动走代理、用完即停。内置 mihomo 内核，按订阅规则表判定，仅服务本会话、不影响其它软件。",
   "type": "module",
   "main": "lib/index.js",
